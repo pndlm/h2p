@@ -92,6 +92,8 @@ class PhantomJS extends ConverterAbstract
         'border' => '1cm',
         'header' => null,
         'footer' => null,
+        'fileFormat' => 'pdf',
+        'viewportSize' => null,
     );
 
     /**

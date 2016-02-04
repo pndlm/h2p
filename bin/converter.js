@@ -54,6 +54,51 @@ try {
     page.customHeaders = options.request.headers;
     phantom.cookies = options.request.cookies;
 
+    page.onError = function (msg, trace) {
+        console.log(msg);
+        trace.forEach(function(item) {
+            console.log('  ', item.file, ':', item.line);
+        });
+    };
+
+    var loadingCheckCount = 1;
+    var loadingInterval = undefined;
+    var isPageLoaded = function() {
+        var hasLoaded = page.evaluate(function() {
+            return document.editorDataLoadComplete === true;
+        });
+        if(hasLoaded) {
+            page.render(options.destination, { format: options.fileFormat || 'pdf' , quality: 80 } );
+
+            console.log(JSON.stringify({
+                success: true,
+                response: null
+            }));
+
+            // Stop the script
+            phantom.exit(0);
+
+            stopPageWatcher();
+        }
+        loadingCheckCount = loadingCheckCount + 1;
+        if(loadingCheckCount > 20) {
+            console.log(JSON.stringify({
+                success: false,
+                error: "Page did not signal load within 10 seconds",
+                response: null
+            }));
+            stopPageWatcher();
+            phantom.exit(1);
+        }
+    }
+    var stopPageWatcher = function() {
+        if(loadingInterval !== undefined) {
+            clearInterval(loadingInterval);
+        }
+    }
+
+    page.settings.javascriptEnabled = true;
+
     page.open(options.request.uri + (options.request.method == 'GET' ? '?' + options.request.params : ''), options.request.method, options.request.params, function (status) {
         try {
             if (status !== 'success') {
@@ -109,18 +154,13 @@ try {
                 }
             }
 
-            page.paperSize = paperSize;
+            if (options.viewportSize != null) {
+                page.viewportSize = options.viewportSize;
+            }
+            page.pageSize = paperSize;
             page.zoomFactor = options.zoomFactor;
-            page.render(options.destination, { format: 'pdf' });
 
-            console.log(JSON.stringify({
-                success: true,
-                response: null
-            }));
-
-            // Stop the script
-            phantom.exit(0);
-
+            setInterval(isPageLoaded, 500);
         } catch (e) {
             errorHandler(e);
         }
