@@ -55,11 +55,19 @@ try {
     phantom.cookies = options.request.cookies;
 
     page.onError = function (msg, trace) {
-        console.log(msg);
-        trace.forEach(function(item) {
-            console.log('  ', item.file, ':', item.line);
-        });
+        console.log(JSON.stringify({
+            success: false,
+            response: msg
+        }));
     };
+
+    page.onResourceError = function(resourceError) {
+        // don't stop, but it _seems_ like having this callback defined 
+        // more gracefully degrades resource failures
+        system.stderr.writeLine('= onResourceError()');
+        system.stderr.writeLine('  - unable to load url: "' + resourceError.url + '"');
+        system.stderr.writeLine('  - error code: ' + resourceError.errorCode + ', description: ' + resourceError.errorString );
+    }
 
     var loadingCheckCount = 1;
     var loadingInterval = undefined;
