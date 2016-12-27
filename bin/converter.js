@@ -30,141 +30,166 @@
  * @license    MIT License
  */
 
-var page = require('webpage').create();
 var args = require('system').args;
 
-function errorHandler(e) {
-    console.log(JSON.stringify({
-        success: false,
-        response: e.toString()
-    }));
-
-    // Stop the script
-    phantom.exit(0);
-}
+var page;
+var options = {}
 
 try {
-    if (args.length < 2) {
-        throw 'You must pass the URI and the Destination param!';
-    }
+	if (args.length < 2) {
+		throw 'You must pass the URI and the Destination param!';
+	}
 
-    // Take all options in one JSON param
-    var options = JSON.parse(args[1]);
+	// Take all options in one JSON param
+	options = JSON.parse(args[1]);
 
-    page.customHeaders = options.request.headers;
-    phantom.cookies = options.request.cookies;
-
-    page.onError = function (msg, trace) {
-        console.log(msg);
-        trace.forEach(function(item) {
-            console.log('  ', item.file, ':', item.line);
-        });
-    };
-
-    var loadingCheckCount = 1;
-    var loadingInterval = undefined;
-    var isPageLoaded = function() {
-        var hasLoaded = page.evaluate(function() {
-            return document.editorDataLoadComplete === true;
-        });
-        if(hasLoaded) {
-            page.render(options.destination, { format: options.fileFormat || 'pdf' , quality: 80 } );
-
-            console.log(JSON.stringify({
-                success: true,
-                response: null
-            }));
-
-            // Stop the script
-            phantom.exit(0);
-
-            stopPageWatcher();
-        }
-        loadingCheckCount = loadingCheckCount + 1;
-        if(loadingCheckCount > 20) {
-            console.log(JSON.stringify({
-                success: false,
-                error: "Page did not signal load within 10 seconds",
-                response: null
-            }));
-            stopPageWatcher();
-            phantom.exit(1);
-        }
-    }
-    var stopPageWatcher = function() {
-        if(loadingInterval !== undefined) {
-            clearInterval(loadingInterval);
-        }
-    }
-
-    page.settings.javascriptEnabled = true;
-
-    page.open(options.request.uri + (options.request.method == 'GET' ? '?' + options.request.params : ''), options.request.method, options.request.params, function (status) {
-        try {
-            if (status !== 'success') {
-                throw 'Unable to access the URI! (Make sure you\'re using a .html extension if you\'re trying to use a local file)';
-            }
-
-            var paperSize = {
-                format: options.format,
-                orientation: options.orientation,
-                border: options.border
-            };
-
-            // If we enable custom footer per page, evaluate it
-            if (options.allowParseCustomFooter || options.allowParseCustomHeader) {
-                var customOptions = page.evaluate(function() {
-                    return (typeof _h2p_options == "object"
-                        && (typeof _h2p_options.footer == "object" || typeof _h2p_options.header == "object"))
-                        ? _h2p_options : {};
-                });
-            }
-
-            if (options.allowParseCustomFooter && customOptions.footer) {
-                options.footer = options.footer || { height: '1cm', content: '' }; // Avoid some errors
-                options.footer = {
-                    height: customOptions.footer.height || options.footer.height,
-                    content: customOptions.footer.content || options.footer.content
-                }
-            }
-
-            if (options.allowParseCustomHeader && customOptions.header) {
-                options.header = options.header || { height: '1cm', content: '' }; // Avoid some errors
-                options.header = {
-                    height: customOptions.header.height || options.header.height,
-                    content: customOptions.header.content || options.header.content
-                }
-            }
-
-            if (options.footer) {
-                paperSize.footer = {
-                    height: options.footer.height,
-                    contents: phantom.callback(function(pageNum, totalPages) {
-                        return options.footer.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
-                    })
-                }
-            }
-
-            if (options.header) {
-                paperSize.header = {
-                    height: options.header.height,
-                    contents: phantom.callback(function(pageNum, totalPages) {
-                        return options.header.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
-                    })
-                }
-            }
-
-            if (options.viewportSize != null) {
-                page.viewportSize = options.viewportSize;
-            }
-            page.pageSize = paperSize;
-            page.zoomFactor = options.zoomFactor;
-
-            setInterval(isPageLoaded, 500);
-        } catch (e) {
-            errorHandler(e);
-        }
-    });
 } catch (e) {
-    errorHandler(e);
+	errorHandler(e);
 }
+
+var initialUrl = options.request.uri + (options.request.method == 'GET' ? '?' + options.request.params : '');
+
+function errorHandler(e) {
+	console.log(JSON.stringify({
+		success: false,
+		response: e.toString()
+	}));
+
+	// Stop the script
+	phantom.exit(0);
+}
+
+var renderPage = function (url) {
+	page = require('webpage').create();
+
+	page.customHeaders = options.request.headers;
+	phantom.cookies = options.request.cookies;
+
+	page.onNavigationRequested = function (url, type, willNavigate, main) {
+		if (main && url != myurl) {
+			myurl = url;
+			console.log("redirect caught")
+			page.close()
+			setTimeout('renderPage(myurl)', 1); //Note the setTimeout here
+		}
+	};
+
+	page.onError = function (msg, trace) {
+		console.log(msg);
+		trace.forEach(function (item) {
+			console.log('  ', item.file, ':', item.line);
+		});
+	};
+
+	var loadingCheckCount = 1;
+	var loadingInterval = undefined;
+
+	var isPageLoaded = function () {
+		var hasLoaded = page.evaluate(function () {
+			return document.editorDataLoadComplete === true;
+		});
+		if (hasLoaded) {
+			page.render(options.destination, {format: options.fileFormat || 'pdf', quality: 80});
+
+			console.log(JSON.stringify({
+				success: true,
+				response: null
+			}));
+
+			// Stop the script
+			phantom.exit(0);
+
+			stopPageWatcher();
+		}
+		loadingCheckCount = loadingCheckCount + 1;
+		if (loadingCheckCount > 20) {
+			console.log(JSON.stringify({
+				success: false,
+				error: "Page did not signal load within 10 seconds",
+				response: null
+			}));
+			stopPageWatcher();
+			phantom.exit(1);
+		}
+	}
+
+	var stopPageWatcher = function () {
+		if (loadingInterval !== undefined) {
+			clearInterval(loadingInterval);
+		}
+	}
+
+	page.settings.javascriptEnabled = true;
+
+	page.open(url, options.request.method, options.request.params, function (status) {
+
+		try {
+			if (status !== 'success') {
+				throw 'Unable to access the URI: ' + url + ' (Make sure you\'re using a .html extension if you\'re trying to use a local file)';
+				phantom.exit(1);
+			}
+
+			var paperSize = {
+				format: options.format,
+				orientation: options.orientation,
+				border: options.border
+			};
+
+			// If we enable custom footer per page, evaluate it
+			if (options.allowParseCustomFooter || options.allowParseCustomHeader) {
+				var customOptions = page.evaluate(function () {
+					return (typeof _h2p_options == "object"
+					&& (typeof _h2p_options.footer == "object" || typeof _h2p_options.header == "object"))
+						? _h2p_options : {};
+				});
+			}
+
+			if (options.allowParseCustomFooter && customOptions.footer) {
+				options.footer = options.footer || {height: '1cm', content: ''}; // Avoid some errors
+				options.footer = {
+					height: customOptions.footer.height || options.footer.height,
+					content: customOptions.footer.content || options.footer.content
+				}
+			}
+
+			if (options.allowParseCustomHeader && customOptions.header) {
+				options.header = options.header || {height: '1cm', content: ''}; // Avoid some errors
+				options.header = {
+					height: customOptions.header.height || options.header.height,
+					content: customOptions.header.content || options.header.content
+				}
+			}
+
+			if (options.footer) {
+				paperSize.footer = {
+					height: options.footer.height,
+					contents: phantom.callback(function (pageNum, totalPages) {
+						return options.footer.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
+					})
+				}
+			}
+
+			if (options.header) {
+				paperSize.header = {
+					height: options.header.height,
+					contents: phantom.callback(function (pageNum, totalPages) {
+						return options.header.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
+					})
+				}
+			}
+
+			if (options.viewportSize != null) {
+				page.viewportSize = options.viewportSize;
+			}
+			page.pageSize = paperSize;
+			page.zoomFactor = options.zoomFactor;
+
+			setInterval(isPageLoaded, 500);
+		} catch (e) {
+			errorHandler(e);
+		}
+	});
+
+}
+
+renderPage(initialUrl);
