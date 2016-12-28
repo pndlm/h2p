@@ -98,14 +98,14 @@ class PhantomJS extends ConverterAbstract
 
     /**
      * Library bin path
-     * 
+     *
      * @var string
      */
     protected $binPath = '../../../bin';
-    
+
     /**
      * Paths to search PhantomJS binary file
-     * 
+     *
      * @var array
      */
     protected $searchPaths = array();
@@ -129,7 +129,7 @@ class PhantomJS extends ConverterAbstract
 
     /**
      * Set and detect paths for PhantomJS binary file
-     * 
+     *
      * @param array|string $paths
      * @return \H2P\Converter\PhantomJS $this
      */
@@ -193,7 +193,7 @@ class PhantomJS extends ConverterAbstract
 
     /**
      * Returns the PhantomJS binary path based on defined Search Paths
-     * 
+     *
      * @return string
      * @throws Exception
      */
@@ -208,10 +208,10 @@ class PhantomJS extends ConverterAbstract
 
         throw new Exception('PhantomJS binary not found! Please, download it at <http://phantomjs.org/download.html>');
     }
-    
+
     /**
      * Returns H2P Converter Script Path
-     * 
+     *
      * @return string
      */
     protected function getConverterPath()
@@ -288,15 +288,15 @@ class PhantomJS extends ConverterAbstract
         $result = json_decode(trim($shellResult));
 
         if(!isset($result)) {
-            throw new Exception('Empty JSON result for shell result: "' . $shellResult . '"');
+            throw new \ErrorException('Empty JSON result for shell result: "' . $shellResult . '"');
         }
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('json decode error: ' . json_last_error_msg() . "\n" . $shellResult);
+            throw new \ErrorException('json decode error: ' . json_last_error_msg() . "\n" . $shellResult);
         }
 
         if (!$result->success) {
-            throw new Exception('Error while executing PhantomJS: "' . $result->response . '"');
+            throw new \ErrorException('Error while executing PhantomJS: "' . $result->response . '" shellResult:' . trim($shellResult));
         }
 
         return true;
