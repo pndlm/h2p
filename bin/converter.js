@@ -97,6 +97,15 @@ var renderPage = function (url) {
 			return document.editorDataLoadComplete === true;
 		});
 		if (hasLoaded) {
+
+			// this is required on phantomjs 2
+			// to make sure we are using the appropriate
+			// zoom setting (which needs to be 0.75)
+			var zoom = page.zoomFactor;
+			page.evaluate(function(zoom) {
+				return document.querySelector('body').style.zoom = zoom;
+			}, zoom);
+
 			page.render(options.destination, { format: options.fileFormat || 'pdf', quality: 80 } );
 
 			console.log(JSON.stringify({
