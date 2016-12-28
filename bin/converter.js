@@ -81,6 +81,14 @@ var renderPage = function (url) {
 		});
 	};
 
+	page.onResourceError = function(resourceError) {
+		// don't stop, but it _seems_ like having this callback defined
+		// more gracefully degrades resource failures
+		system.stderr.writeLine('= onResourceError()');
+		system.stderr.writeLine('  - unable to load url: "' + resourceError.url + '"');
+		system.stderr.writeLine('  - error code: ' + resourceError.errorCode + ', description: ' + resourceError.errorString );
+	}
+
 	var loadingCheckCount = 1;
 	var loadingInterval = undefined;
 
@@ -89,7 +97,7 @@ var renderPage = function (url) {
 			return document.editorDataLoadComplete === true;
 		});
 		if (hasLoaded) {
-			page.render(options.destination, {format: options.fileFormat || 'pdf', quality: 80});
+			page.render(options.destination, { format: options.fileFormat || 'pdf', quality: 80 } );
 
 			console.log(JSON.stringify({
 				success: true,
