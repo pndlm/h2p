@@ -189,7 +189,8 @@ var renderPage = function (url) {
 			if (options.viewportSize != null) {
 				page.viewportSize = options.viewportSize;
 			}
-			page.pageSize = paperSize;
+			page.paperSize = paperSize;
+
 			page.zoomFactor = options.zoomFactor;
 
 			setInterval(isPageLoaded, 500);
