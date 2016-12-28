@@ -89,7 +89,7 @@ class PhantomJS extends ConverterAbstract
         'zoomFactor' => 1,
         'allowParseCustomFooter' => false,
         'allowParseCustomHeader' => false,
-        'border' => '1cm',
+        'border' => '0cm',
         'header' => null,
         'footer' => null,
         'fileFormat' => 'pdf',
