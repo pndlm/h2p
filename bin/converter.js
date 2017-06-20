@@ -75,9 +75,9 @@ var renderPage = function (url) {
 	};
 
 	page.onError = function (msg, trace) {
-		console.log(msg);
+		system.stderr.writeLine(msg);
 		trace.forEach(function (item) {
-			console.log('  ', item.file, ':', item.line);
+			system.stderr.writeLine('  ', item.file, ':', item.line);
 		});
 	};
 
