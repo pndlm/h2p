@@ -65,8 +65,6 @@ var renderPage = function (url) {
 	page.customHeaders = options.request.headers;
 	phantom.cookies = options.request.cookies;
 
-	page.settings.userAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0';
-
 	page.onNavigationRequested = function (url, type, willNavigate, main) {
 		if (main && url != myurl) {
 			myurl = url;
